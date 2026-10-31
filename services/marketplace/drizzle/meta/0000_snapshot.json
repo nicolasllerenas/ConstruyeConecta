@@ -1,0 +1,756 @@
+{
+  "id": "49f0b655-bc1b-4f15-90f2-165887c8fd42",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "marketplace.matches": {
+      "name": "matches",
+      "schema": "marketplace",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specialist_id": {
+          "name": "specialist_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "matches_project_id_projects_id_fk": {
+          "name": "matches_project_id_projects_id_fk",
+          "tableFrom": "matches",
+          "tableTo": "projects",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "matches_specialist_id_specialist_details_user_id_fk": {
+          "name": "matches_specialist_id_specialist_details_user_id_fk",
+          "tableFrom": "matches",
+          "tableTo": "specialist_details",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "specialist_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "matches_family_id_profiles_user_id_fk": {
+          "name": "matches_family_id_profiles_user_id_fk",
+          "tableFrom": "matches",
+          "tableTo": "profiles",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "family_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "matches_project_specialist": {
+          "name": "matches_project_specialist",
+          "nullsNotDistinct": false,
+          "columns": [
+            "project_id",
+            "specialist_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.portfolio_items": {
+      "name": "portfolio_items",
+      "schema": "marketplace",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "specialist_id": {
+          "name": "specialist_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "caption": {
+          "name": "caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "portfolio_specialist_idx": {
+          "name": "portfolio_specialist_idx",
+          "columns": [
+            {
+              "expression": "specialist_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "portfolio_items_specialist_id_specialist_details_user_id_fk": {
+          "name": "portfolio_items_specialist_id_specialist_details_user_id_fk",
+          "tableFrom": "portfolio_items",
+          "tableTo": "specialist_details",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "specialist_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.profiles": {
+      "name": "profiles",
+      "schema": "marketplace",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "role",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "district": {
+          "name": "district",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "radius_km": {
+          "name": "radius_km",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.projects": {
+      "name": "projects",
+      "schema": "marketplace",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "project_kind",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_urls": {
+          "name": "photo_urls",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "voice_note_url": {
+          "name": "voice_note_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "budget_min_cents": {
+          "name": "budget_min_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "budget_max_cents": {
+          "name": "budget_max_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timing": {
+          "name": "timing",
+          "type": "project_timing",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "district": {
+          "name": "district",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "radius_km": {
+          "name": "radius_km",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "highlighted_until": {
+          "name": "highlighted_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "project_status",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "demo": {
+          "name": "demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "projects_family_idx": {
+          "name": "projects_family_idx",
+          "columns": [
+            {
+              "expression": "family_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "projects_status_idx": {
+          "name": "projects_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "projects_family_id_profiles_user_id_fk": {
+          "name": "projects_family_id_profiles_user_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "profiles",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "family_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.rate_limits": {
+      "name": "rate_limits",
+      "schema": "marketplace",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hits": {
+          "name": "hits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "rate_limits_key_window_start_pk": {
+          "name": "rate_limits_key_window_start_pk",
+          "columns": [
+            "key",
+            "window_start"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.specialist_details": {
+      "name": "specialist_details",
+      "schema": "marketplace",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "specialist_kind",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specialties": {
+          "name": "specialties",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_fee_cents": {
+          "name": "visit_fee_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "availability": {
+          "name": "availability",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "plan",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'free'"
+        },
+        "plan_expires_at": {
+          "name": "plan_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "demo": {
+          "name": "demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "completed_jobs": {
+          "name": "completed_jobs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "specialist_details_user_id_profiles_user_id_fk": {
+          "name": "specialist_details_user_id_profiles_user_id_fk",
+          "tableFrom": "specialist_details",
+          "tableTo": "profiles",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.swipes": {
+      "name": "swipes",
+      "schema": "marketplace",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specialist_id": {
+          "name": "specialist_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "swipe_actor",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "swipe_decision",
+          "typeSchema": "marketplace",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "swipes_project_id_projects_id_fk": {
+          "name": "swipes_project_id_projects_id_fk",
+          "tableFrom": "swipes",
+          "tableTo": "projects",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swipes_specialist_id_specialist_details_user_id_fk": {
+          "name": "swipes_specialist_id_specialist_details_user_id_fk",
+          "tableFrom": "swipes",
+          "tableTo": "specialist_details",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "specialist_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "swipes_project_id_specialist_id_actor_pk": {
+          "name": "swipes_project_id_specialist_id_actor_pk",
+          "columns": [
+            "project_id",
+            "specialist_id",
+            "actor"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "marketplace.plan": {
+      "name": "plan",
+      "schema": "marketplace",
+      "values": [
+        "free",
+        "pro"
+      ]
+    },
+    "marketplace.project_kind": {
+      "name": "project_kind",
+      "schema": "marketplace",
+      "values": [
+        "build",
+        "expand",
+        "remodel",
+        "repair"
+      ]
+    },
+    "marketplace.project_status": {
+      "name": "project_status",
+      "schema": "marketplace",
+      "values": [
+        "open",
+        "contracted",
+        "closed"
+      ]
+    },
+    "marketplace.project_timing": {
+      "name": "project_timing",
+      "schema": "marketplace",
+      "values": [
+        "asap",
+        "within_3_months",
+        "just_quoting"
+      ]
+    },
+    "marketplace.role": {
+      "name": "role",
+      "schema": "marketplace",
+      "values": [
+        "family",
+        "specialist"
+      ]
+    },
+    "marketplace.specialist_kind": {
+      "name": "specialist_kind",
+      "schema": "marketplace",
+      "values": [
+        "engineer",
+        "architect",
+        "master_builder",
+        "technician"
+      ]
+    },
+    "marketplace.swipe_actor": {
+      "name": "swipe_actor",
+      "schema": "marketplace",
+      "values": [
+        "family",
+        "specialist"
+      ]
+    },
+    "marketplace.swipe_decision": {
+      "name": "swipe_decision",
+      "schema": "marketplace",
+      "values": [
+        "like",
+        "pass"
+      ]
+    }
+  },
+  "schemas": {
+    "marketplace": "marketplace"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

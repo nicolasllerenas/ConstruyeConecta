@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter '@cc/reputation...' build",
+  "outputDirectory": "public",
+  "regions": ["gru1"],
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+}
