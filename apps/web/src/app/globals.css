@@ -26,6 +26,11 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     background: var(--color-cemento);
     color: var(--color-ink);
@@ -72,5 +77,13 @@
 
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@utility h-feed {
+  height: calc(100dvh - 3.3125rem - max(env(safe-area-inset-bottom), 0.75rem));
+
+  @media (width >= 64rem) {
+    height: 100dvh;
   }
 }

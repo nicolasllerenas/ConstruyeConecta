@@ -74,8 +74,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <ViewerContext.Provider value={viewer}>
-      <div className="lg:pl-64">
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-8 bg-ink px-5 py-7 text-white lg:flex">
+      <div className="lg:pl-72">
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col gap-8 bg-ink px-5 py-7 text-white lg:flex">
           <Link href="/inicio" aria-label="Inicio">
             <Logo inverted />
           </Link>

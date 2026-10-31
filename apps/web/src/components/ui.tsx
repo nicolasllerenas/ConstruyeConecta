@@ -255,14 +255,14 @@ export function Rating({
     return compact ? (
       <span className="font-extrabold">Nuevo</span>
     ) : (
-      <span className="text-sm text-muted">Sin calificaciones aún</span>
+      <span className="text-sm opacity-70">Sin calificaciones aún</span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 font-bold">
       <Star className="size-4 fill-obra text-obra" aria-hidden="true" />
       {value.toFixed(1)}
-      {count === undefined ? null : <span className="font-normal text-muted">({count})</span>}
+      {count === undefined ? null : <span className="font-normal opacity-70">({count})</span>}
     </span>
   );
 }

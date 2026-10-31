@@ -5,5 +5,16 @@
   "buildCommand": "cd ../.. && pnpm --filter '@cc/identity...' build",
   "outputDirectory": "public",
   "regions": ["gru1"],
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "main": true
+    }
+  }
 }

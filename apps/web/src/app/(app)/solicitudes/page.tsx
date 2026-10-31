@@ -22,10 +22,14 @@ function RequestSlide({
   const [photo, setPhoto] = useState(0);
   const url = project.photoUrls[photo];
   return (
-    <article className="flex h-[calc(100dvh-4.75rem)] snap-start snap-always flex-col bg-ink text-white lg:h-dvh">
+    <article className="flex h-feed snap-start snap-always flex-col bg-ink text-white">
       <div className="blueprint relative min-h-0 flex-1">
         {url ? (
-          <img src={url} alt={`Foto de ${project.title}`} className="size-full object-cover" />
+          <img
+            src={url}
+            alt={`Foto de ${project.title}`}
+            className="size-full object-cover lg:object-contain"
+          />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-2 text-sm text-mist">
             <ImageOff className="size-8" aria-hidden="true" />
@@ -176,7 +180,7 @@ export default function RequestsFeedPage() {
   };
 
   return (
-    <div className="no-scrollbar h-[calc(100dvh-4.75rem)] snap-y snap-mandatory overflow-y-auto bg-ink lg:h-dvh">
+    <div className="no-scrollbar h-feed snap-y snap-mandatory overflow-y-auto bg-ink">
       {error ? (
         <div className="absolute inset-x-4 top-4 z-20">
           <ErrorNote message={error} />
