@@ -1,0 +1,28 @@
+{
+  "name": "construyeconecta",
+  "private": true,
+  "packageManager": "pnpm@10.30.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "pnpm -r --if-present test",
+    "test:e2e": "node --env-file=.env --test tests/e2e/*.test.mjs",
+    "env:local": "node infra/dev/create-env.mjs",
+    "db:up": "docker compose up -d --wait",
+    "db:migrate": "node --env-file=.env infra/db/migrate.mjs",
+    "db:seed": "node --env-file=.env infra/db/seed.mjs",
+    "dev": "node --env-file=.env infra/dev/run.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@types/node": "^26.6.6",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}
