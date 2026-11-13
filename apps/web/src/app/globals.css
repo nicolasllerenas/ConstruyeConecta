@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #16181d;
+  --color-night: #23262d;
+  --color-night-line: #3a3e47;
+  --color-mist: #c9cbd1;
+  --color-obra: #ff6a1a;
+  --color-obra-soft: #ffe3d3;
+  --color-obra-text: #b93c08;
+  --color-plano: #2d5bff;
+  --color-plano-soft: #e1e7ff;
+  --color-plano-text: #1d3fcc;
+  --color-plano-light: #8fa6ff;
+  --color-cemento: #f2f2ef;
+  --color-line: #dcdcd6;
+  --color-muted: #5b5f68;
+  --color-visto: #087a55;
+  --color-visto-soft: #e2f3ec;
+  --color-photo: #1e2a3a;
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  body {
+    background: var(--color-cemento);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-plano);
+    outline-offset: 2px;
+  }
+}
+
+@utility font-display {
+  font-weight: 800;
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+}
+
+@utility blueprint {
+  background-color: var(--color-photo);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility h-feed {
+  height: calc(100dvh - 3.3125rem - max(env(safe-area-inset-bottom), 0.75rem));
+
+  @media (width >= 64rem) {
+    height: 100dvh;
+  }
+}
