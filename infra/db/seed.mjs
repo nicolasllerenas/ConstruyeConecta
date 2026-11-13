@@ -17,7 +17,7 @@ const soles = (amount) => amount * 100;
 
 const family = {
   key: 'family',
-  email: 'familia@construyeconecta.test',
+  email: 'familia@cuadra.test',
   fullName: 'Familia Mendoza',
   phone: '999111222',
   address: 'Av. Primavera 1250',
@@ -28,7 +28,7 @@ const family = {
 const specialists = [
   {
     key: 'quispe',
-    email: 'especialista@construyeconecta.test',
+    email: 'especialista@cuadra.test',
     fullName: 'Ing. Carlos Quispe',
     kind: 'engineer',
     phone: '999333444',
@@ -39,11 +39,30 @@ const specialists = [
     district: 'Surquillo',
     latitude: -12.1136,
     longitude: -77.0167,
-    stars: [5, 5, 4, 5],
+    credential: 'Ingeniero civil colegiado (CIP)',
+    yearsExperience: 12,
+    reviews: [
+      [
+        5,
+        ['Respetó el presupuesto', 'Buena comunicación'],
+        'Explicó cada partida sin tecnicismos y no hubo gastos sorpresa.',
+      ],
+      [
+        5,
+        ['Cumplió el plazo', 'Trabajo limpio'],
+        'Terminó la ampliación en las semanas que prometió.',
+      ],
+      [4, ['Puntual'], 'Buen trabajo. Nos avisó antes de cada cambio en el presupuesto.'],
+      [
+        5,
+        ['Buena comunicación', 'Trabajo limpio'],
+        'Nos mandaba fotos del avance antes de cada pago.',
+      ],
+    ],
   },
   {
     key: 'salas',
-    email: 'salas.demo@construyeconecta.test',
+    email: 'salas.demo@cuadra.test',
     fullName: 'Arq. Diego Salas',
     kind: 'architect',
     phone: '999555666',
@@ -54,11 +73,21 @@ const specialists = [
     district: 'Miraflores',
     latitude: -12.1211,
     longitude: -77.0297,
-    stars: [5, 4, 5],
+    credential: 'Arquitecto colegiado (CAP)',
+    yearsExperience: 9,
+    reviews: [
+      [5, ['Buena comunicación'], 'Los planos y la licencia salieron sin problemas.'],
+      [4, ['Trabajo limpio'], 'Diseño muy cuidado, aunque fue la opción más cara.'],
+      [
+        5,
+        ['Cumplió el plazo', 'Respetó el presupuesto'],
+        'Entregó antes de lo previsto y con todo incluido.',
+      ],
+    ],
   },
   {
     key: 'huaman',
-    email: 'huaman.demo@construyeconecta.test',
+    email: 'huaman.demo@cuadra.test',
     fullName: 'Mtro. Julio Huamán',
     kind: 'master_builder',
     phone: '999777888',
@@ -69,11 +98,22 @@ const specialists = [
     district: 'San Juan de Miraflores',
     latitude: -12.1581,
     longitude: -76.9711,
-    stars: [4, 5, 4],
+    credential: 'Maestro de obra certificado por SENCICO',
+    yearsExperience: 20,
+    reviews: [
+      [4, ['Puntual'], 'Cuadrilla rápida, pero los permisos corrieron por nuestra cuenta.'],
+      [5, ['Trabajo limpio', 'Cumplió el plazo'], 'Techó el segundo piso antes de las lluvias.'],
+      [
+        4,
+        ['Buena comunicación'],
+        'Precio justo. Hubo un adicional que no estaba en la cotización.',
+      ],
+      [5, ['Puntual', 'Trabajo limpio'], 'Trato directo y trabajo ordenado.'],
+    ],
   },
   {
     key: 'paredes',
-    email: 'paredes.demo@construyeconecta.test',
+    email: 'paredes.demo@cuadra.test',
     fullName: 'Arq. Lucía Paredes',
     kind: 'architect',
     phone: '999123123',
@@ -84,11 +124,16 @@ const specialists = [
     district: 'San Borja',
     latitude: -12.1078,
     longitude: -77.0006,
-    stars: [5, 5],
+    credential: 'Arquitecta colegiada (CAP)',
+    yearsExperience: 7,
+    reviews: [
+      [5, ['Buena comunicación'], 'Aprovechó muy bien el espacio de la azotea.'],
+      [5, ['Respetó el presupuesto', 'Puntual'], 'Clara con los costos desde la primera visita.'],
+    ],
   },
   {
     key: 'ccori',
-    email: 'ccori.demo@construyeconecta.test',
+    email: 'ccori.demo@cuadra.test',
     fullName: 'Rosa Ccori',
     kind: 'technician',
     phone: '999456456',
@@ -99,7 +144,12 @@ const specialists = [
     district: 'Surquillo',
     latitude: -12.1136,
     longitude: -77.0167,
-    stars: [5, 4],
+    credential: 'Técnica electricista certificada por SENCICO',
+    yearsExperience: 10,
+    reviews: [
+      [5, ['Trabajo limpio'], 'Dejó todas las instalaciones probadas y rotuladas.'],
+      [4, ['Puntual', 'Buena comunicación'], 'Llegó a tiempo y explicó cada punto de luz.'],
+    ],
   },
 ];
 
@@ -111,7 +161,7 @@ async function upsertUser(user, role, passwordHash) {
   await client.query(
     `INSERT INTO identity.users (id, email, password_hash, full_name, role)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+     ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash`,
     [id(user.key), user.email, passwordHash, user.fullName, role],
   );
   await client.query(
@@ -144,9 +194,12 @@ for (const specialist of specialists) {
   await upsertUser(specialist, 'specialist', hash);
   await client.query(
     `INSERT INTO marketplace.specialist_details
-       (user_id, kind, bio, specialties, visit_fee_cents, availability, verified, demo, completed_jobs)
-     VALUES ($1, $2, $3, $4, $5, 'Lun a sáb, 8:00 a 18:00', true, true, $6)
-     ON CONFLICT (user_id) DO NOTHING`,
+       (user_id, kind, bio, specialties, visit_fee_cents, availability, verified, demo,
+        completed_jobs, credential, years_experience)
+     VALUES ($1, $2, $3, $4, $5, 'Lun a sáb, 8:00 a 18:00', true, true, $6, $7, $8)
+     ON CONFLICT (user_id) DO UPDATE SET
+       credential = EXCLUDED.credential,
+       years_experience = EXCLUDED.years_experience`,
     [
       id(specialist.key),
       specialist.kind,
@@ -154,22 +207,25 @@ for (const specialist of specialists) {
       specialist.specialties,
       soles(specialist.visitFee),
       specialist.completedJobs,
+      specialist.credential,
+      specialist.yearsExperience,
     ],
   );
-  for (const [index, stars] of specialist.stars.entries()) {
+  for (const [index, [stars, tags, comment]] of specialist.reviews.entries()) {
     await client.query(
       `INSERT INTO reputation.reviews
          (id, contract_id, author_id, subject_id, author_role, stars, tags, comment, created_at)
-       VALUES ($1, $2, $3, $4, 'family', $5, $6, $7, now() - interval '40 days')
-       ON CONFLICT (id) DO NOTHING`,
+       VALUES ($1, $2, $3, $4, 'family', $5, $6, $7, now() - make_interval(days => 40 + $8 * 9))
+       ON CONFLICT (id) DO UPDATE SET stars = EXCLUDED.stars, tags = EXCLUDED.tags, comment = EXCLUDED.comment`,
       [
         id(`review:${specialist.key}:${index}`),
         id(`demo-contract:${specialist.key}:${index}`),
         id(`demo-author:${specialist.key}:${index}`),
         id(specialist.key),
         stars,
-        ['Puntual', 'Buena comunicación'],
-        'Reseña de demostración.',
+        tags,
+        comment,
+        index,
       ],
     );
   }
@@ -179,9 +235,9 @@ async function insertProject(key, values) {
   await client.query(
     `INSERT INTO marketplace.projects
        (id, family_id, kind, title, description, photo_urls, budget_min_cents, budget_max_cents,
-        timing, district, latitude, longitude, radius_km, status, demo)
-     VALUES ($1, $2, $3, $4, $5, '{}', $6, $7, $8, $9, $10, $11, 15, $12, true)
-     ON CONFLICT (id) DO NOTHING`,
+        timing, estimated_date, district, latitude, longitude, radius_km, status, demo)
+     VALUES ($1, $2, $3, $4, $5, '{}', $6, $7, $8, $13, $9, $10, $11, 15, $12, true)
+     ON CONFLICT (id) DO UPDATE SET estimated_date = EXCLUDED.estimated_date`,
     [
       id(key),
       id('family'),
@@ -195,6 +251,7 @@ async function insertProject(key, values) {
       family.latitude,
       family.longitude,
       values.status,
+      values.estimatedDate ?? null,
     ],
   );
 }
@@ -308,6 +365,10 @@ async function insertContract(projectKey, projectTitle, quoteId, status, weeks, 
   return contractId;
 }
 
+function daysFromNow(days) {
+  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+}
+
 const expansion = {
   key: 'project:expansion',
   title: 'Ampliar 2.º piso, 40 m²',
@@ -319,6 +380,7 @@ await insertProject(expansion.key, {
   budgetMin: 50000,
   budgetMax: 60000,
   timing: 'within_3_months',
+  estimatedDate: daysFromNow(45),
   status: 'open',
 });
 for (const key of ['quispe', 'salas', 'huaman']) {
@@ -468,14 +530,15 @@ const facadeContract = await insertContract(facade.key, facade.title, facadeQuot
 await client.query(
   `INSERT INTO reputation.reviews
      (id, contract_id, author_id, subject_id, author_role, stars, tags, comment)
-   VALUES ($1, $2, $3, $4, 'specialist', 5, $5, $6) ON CONFLICT (id) DO NOTHING`,
+   VALUES ($1, $2, $3, $4, 'specialist', 5, $5, $6)
+   ON CONFLICT (id) DO UPDATE SET comment = EXCLUDED.comment`,
   [
     id('review:facade:family'),
     facadeContract,
     id('quispe'),
     id('family'),
     ['Pagos a tiempo', 'Decisiones claras'],
-    'Reseña de demostración.',
+    'Aprobó cada etapa a tiempo y decidió rápido los cambios.',
   ],
 );
 
@@ -487,6 +550,7 @@ await insertProject(terrace.key, {
   budgetMin: 8000,
   budgetMax: 12000,
   timing: 'within_3_months',
+  estimatedDate: daysFromNow(30),
   status: 'open',
 });
 await client.query(

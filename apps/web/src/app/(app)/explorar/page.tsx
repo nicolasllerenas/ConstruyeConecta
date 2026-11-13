@@ -1,7 +1,7 @@
 'use client';
 
 import type { ProjectCard, SpecialistCard, SwipeResult } from '@cc/contracts';
-import { Check, MapPin, X } from 'lucide-react';
+import { Check, MapPin, Sparkles, X } from 'lucide-react';
 import {
   AnimatePresence,
   animate,
@@ -10,17 +10,22 @@ import {
   useMotionValue,
   useTransform,
 } from 'motion/react';
-import { useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { MatchScreen } from '@/components/match-screen';
+import { CredentialLine } from '@/components/specialist-profile';
 import {
   DemoBadge,
   Empty,
   ErrorNote,
   Field,
+  LevelBadge,
   LinkButton,
   Loading,
   Rating,
   Select,
+  StepIndicator,
   VerifiedBadge,
 } from '@/components/ui';
 import { errorMessage, request, useApi } from '@/lib/api';
@@ -95,6 +100,7 @@ function SpecialistSwipeCard({
           </span>
         ) : null}
         <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
+          <LevelBadge level={specialist.level} />
           {specialist.verified ? <VerifiedBadge /> : null}
           {specialist.pro ? (
             <span className="rounded-lg bg-ink px-2 py-1 text-xs font-extrabold text-white">
@@ -107,7 +113,7 @@ function SpecialistSwipeCard({
           style={{ opacity: likeOpacity }}
           className="absolute top-14 left-5 -rotate-12 rounded-xl border-4 border-obra bg-ink/70 px-3 py-1 text-2xl font-extrabold text-obra"
         >
-          ME INTERESA
+          INVITAR
         </motion.span>
         <motion.span
           style={{ opacity: passOpacity }}
@@ -127,6 +133,7 @@ function SpecialistSwipeCard({
           ) : null}
         </div>
         <p className="-mt-1.5 text-[15px] text-muted">{SPECIALIST_KIND_LABELS[specialist.kind]}</p>
+        <CredentialLine specialist={specialist} />
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-cemento px-2.5 py-2">
             <Rating value={specialist.rating} compact />
@@ -141,6 +148,19 @@ function SpecialistSwipeCard({
             <div className="text-xs text-muted">visita</div>
           </div>
         </div>
+        {specialist.reasons.length > 0 ? (
+          <div className="flex flex-col gap-1.5 rounded-xl bg-plano-soft px-3 py-2.5">
+            <span className="flex items-center gap-1.5 text-xs font-extrabold text-plano-text">
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              Por qué te lo recomendamos
+            </span>
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] font-semibold">
+              {specialist.reasons.map((reason) => (
+                <li key={reason}>✓ {reason}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <p className="line-clamp-2 text-sm text-muted">{specialist.bio}</p>
         <div className="flex flex-wrap gap-1.5">
           {specialist.specialties.slice(0, 4).map((specialty) => (
@@ -152,6 +172,12 @@ function SpecialistSwipeCard({
             </span>
           ))}
         </div>
+        <Link
+          href={`/especialistas/${specialist.id}`}
+          className="self-start text-sm font-bold text-plano-text underline"
+        >
+          Ver perfil y reseñas
+        </Link>
       </div>
     </motion.article>
   );
@@ -164,6 +190,7 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
   const [decided, setDecided] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [matched, setMatched] = useState<string | null>(null);
+  const [invited, setInvited] = useState<string | null>(null);
 
   if (candidates.isLoading) {
     return <Loading label="Buscando especialistas cerca…" />;
@@ -181,6 +208,7 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
     }
     setDecided((ids) => [...ids, current.id]);
     setError(null);
+    setInvited(null);
     try {
       const result = await request<SwipeResult>('marketplace/swipes/family', 'POST', {
         projectId: project.id,
@@ -189,6 +217,8 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
       });
       if (result.matched) {
         setMatched(current.displayName);
+      } else if (decision === 'like') {
+        setInvited(current.displayName);
       }
     } catch (caught) {
       setDecided((ids) => ids.filter((id) => id !== current.id));
@@ -199,6 +229,12 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
   return (
     <div className="flex flex-col gap-4">
       <ErrorNote message={error} />
+      {invited ? (
+        <p role="status" className="rounded-xl bg-visto-soft px-3.5 py-2.5 text-sm text-visto">
+          <strong>Invitación enviada a {invited}.</strong> Cuando te envíe su cotización, la verás
+          en Ofertas.
+        </p>
+      ) : null}
       {current ? (
         <>
           <div className="relative">
@@ -223,7 +259,7 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
             </button>
             <button
               type="button"
-              aria-label="Me interesa"
+              aria-label="Pedir cotización"
               onClick={() => decide('like')}
               className="flex size-20 items-center justify-center rounded-full bg-obra shadow-[0_10px_22px_rgb(255_106_26/0.35)] transition hover:scale-105"
             >
@@ -231,20 +267,26 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
             </button>
           </div>
           <p className="text-center text-sm text-muted">
-            Desliza a la derecha si te interesa. Hay match cuando el interés es mutuo.
+            Desliza a la derecha para pedirle cotización. Los especialistas cercanos también pueden
+            enviarte la suya.
           </p>
         </>
       ) : (
         <Empty
           title="Ya viste a todos los especialistas cerca"
-          description="Te avisaremos en Ofertas cuando alguien acepte y te envíe una cotización. También puedes ampliar tu radio en tu perfil."
+          description="Las cotizaciones que te envíen aparecerán en Ofertas. También puedes ampliar tu radio en tu perfil."
           action={<LinkButton href="/ofertas">Ver mis ofertas</LinkButton>}
         />
       )}
       {matched ? (
         <MatchScreen
-          counterpart={matched}
-          projectTitle={project.title}
+          message={
+            <>
+              <strong className="text-white">{matched}</strong> ya quiere cotizar{' '}
+              <strong className="text-white">{project.title}</strong>. Ahora puede ver tu dirección
+              y escribirte.
+            </>
+          }
           steps={[
             'Coordinan una visita para evaluar tu obra.',
             'Te envía su cotización en formato estándar.',
@@ -259,10 +301,12 @@ function SwipeDeck({ project }: { project: ProjectCard }) {
   );
 }
 
-export default function ExplorePage() {
+function ExploreContent() {
   const { profile } = useViewer();
+  const params = useSearchParams();
+  const justPublished = params.get('obra');
   const projects = useApi<ProjectCard[]>('marketplace/projects/mine');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(justPublished);
 
   if (projects.isLoading) {
     return <Loading />;
@@ -278,6 +322,15 @@ export default function ExplorePage() {
       </div>
       {project ? (
         <>
+          {justPublished === project.id ? (
+            <>
+              <StepIndicator current={1} />
+              <p className="rounded-xl bg-visto-soft px-3.5 py-2.5 text-sm text-visto">
+                <strong>¡Publicamos tu obra!</strong> Invita a quienes te gusten. Sus cotizaciones
+                llegarán a Ofertas.
+              </p>
+            </>
+          ) : null}
           {open.length > 1 ? (
             <Field label="Buscando para">
               {(id) => (
@@ -309,5 +362,13 @@ export default function ExplorePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ExploreContent />
+    </Suspense>
   );
 }

@@ -3,4 +3,5 @@ export * from './identity.js';
 export * from './marketplace.js';
 export * from './media.js';
 export * from './quotes.js';
+export * from './ranking.js';
 export * from './reputation.js';

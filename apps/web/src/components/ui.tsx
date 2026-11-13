@@ -1,7 +1,8 @@
 'use client';
 
+import type { SpecialistLevel } from '@cc/contracts';
 import clsx from 'clsx';
-import { BadgeCheck, Loader2, Star, TriangleAlert } from 'lucide-react';
+import { BadgeCheck, Check, Loader2, MessageCircle, Star, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import type {
   ButtonHTMLAttributes,
@@ -12,7 +13,7 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 import { useId } from 'react';
-import { initials } from '@/lib/format';
+import { initials, SPECIALIST_LEVEL_LABELS, whatsappLink } from '@/lib/format';
 
 type Variant = 'primary' | 'specialist' | 'outline' | 'ghost' | 'dark' | 'outlineDark';
 
@@ -57,6 +58,30 @@ export function LinkButton({
   ...props
 }: ComponentProps<typeof Link> & { variant?: Variant }) {
   return <Link {...props} className={buttonClass(variant, className)} />;
+}
+
+export function WhatsAppButton({
+  phone,
+  text,
+  variant = 'dark',
+  className,
+}: {
+  phone: string;
+  text: string;
+  variant?: Variant;
+  className?: string;
+}) {
+  return (
+    <a
+      href={whatsappLink(phone, text)}
+      target="_blank"
+      rel="noreferrer"
+      className={buttonClass(variant, className)}
+    >
+      <MessageCircle className="size-5" aria-hidden="true" />
+      WhatsApp
+    </a>
+  );
 }
 
 export function Field({
@@ -234,6 +259,24 @@ export function VerifiedBadge() {
   );
 }
 
+const LEVEL_TONES: Record<SpecialistLevel, string> = {
+  new: 'bg-plano-soft text-plano-text',
+  bronze: 'bg-[#f3e2d3] text-[#7a4413]',
+  silver: 'bg-[#e7e9ee] text-[#3d4350]',
+  gold: 'bg-[#fff1c2] text-[#7a5a00]',
+};
+
+export function LevelBadge({ level }: { level: SpecialistLevel }) {
+  return (
+    <span
+      className={clsx('rounded-lg px-2 py-1 text-xs font-extrabold', LEVEL_TONES[level])}
+      title="Nivel según obras realizadas y reseñas"
+    >
+      Nivel {SPECIALIST_LEVEL_LABELS[level]}
+    </span>
+  );
+}
+
 export function DemoBadge() {
   return (
     <span className="rounded-lg bg-night px-2 py-1 text-xs font-bold text-white">
@@ -273,5 +316,50 @@ export function PilotPaymentNote() {
       <strong>Piloto:</strong> los pagos están simulados. Registramos cada etapa, pero todavía no se
       mueve dinero real por la app.
     </p>
+  );
+}
+
+export const FAMILY_STEPS = ['Cuéntanos tu obra', 'Compara cotizaciones', 'Revisa el detalle'];
+
+export function StepIndicator({
+  current,
+  steps = FAMILY_STEPS,
+}: {
+  current: number;
+  steps?: string[];
+}) {
+  return (
+    <ol aria-label="Pasos" className="grid grid-cols-3 gap-1.5">
+      {steps.map((step, index) => {
+        const state = index < current ? 'done' : index === current ? 'current' : 'next';
+        return (
+          <li
+            key={step}
+            aria-current={state === 'current' ? 'step' : undefined}
+            className="flex flex-col gap-1.5"
+          >
+            <span
+              className={clsx(
+                'h-1.5 rounded-full',
+                state === 'next' ? 'bg-line' : state === 'current' ? 'bg-obra' : 'bg-ink',
+              )}
+            />
+            <span
+              className={clsx(
+                'flex items-center gap-1 text-xs leading-tight font-bold',
+                state === 'next' ? 'text-muted' : 'text-ink',
+              )}
+            >
+              {state === 'done' ? (
+                <Check className="size-3.5 shrink-0 text-visto" aria-hidden="true" />
+              ) : (
+                <span className="shrink-0">{index + 1}.</span>
+              )}
+              {step}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

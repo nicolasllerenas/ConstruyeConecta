@@ -3,7 +3,7 @@
 import { IMAGE_CONTENT_TYPES, MAX_UPLOAD_BYTES } from '@cc/contracts';
 import { Camera, Loader2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { uploadFile } from '@/lib/upload';
+import { type Uploader, uploadFile } from '@/lib/upload';
 import { ErrorNote } from './ui';
 
 export function ImagePicker({
@@ -11,11 +11,13 @@ export function ImagePicker({
   onChange,
   max = 6,
   tileClass = 'size-20',
+  upload = uploadFile,
 }: {
   urls: string[];
   onChange: (urls: string[]) => void;
   max?: number;
   tileClass?: string;
+  upload?: Uploader;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -33,7 +35,7 @@ export function ImagePicker({
     }
     setBusy(true);
     try {
-      const uploaded = await Promise.all(selected.map((file) => uploadFile(file, file.name)));
+      const uploaded = await Promise.all(selected.map((file) => upload(file, file.name)));
       onChange([...urls, ...uploaded]);
     } catch {
       setError('No pudimos subir la foto. Inténtalo de nuevo.');

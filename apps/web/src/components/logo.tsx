@@ -1,33 +1,30 @@
 interface MarkProps {
   size?: number;
-  left?: string;
-  right?: string;
-  dot?: string;
+  frame?: string;
+  block?: string;
 }
 
 export function LogoMark({
   size = 36,
-  left = 'var(--color-ink)',
-  right = 'var(--color-obra)',
-  dot = 'var(--color-obra)',
+  frame = 'var(--color-ink)',
+  block = 'var(--color-obra)',
 }: MarkProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M28 54H11V29L28 12" fill="none" stroke={left} strokeWidth="7" />
-      <path d="M36 12L53 29V54H36" fill="none" stroke={right} strokeWidth="7" />
-      <circle cx="32" cy="40" r="5" fill={dot} />
+      <path d="M50 12.5H12.5V51.5H50" fill="none" stroke={frame} strokeWidth="9" />
+      <rect x="29" y="23" width="18" height="18" rx="2" fill={block} />
     </svg>
   );
 }
 
 export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <LogoMark left={inverted ? '#ffffff' : undefined} />
+    <span className="inline-flex items-center gap-2">
+      <LogoMark frame={inverted ? '#ffffff' : undefined} />
       <span
-        className={`text-xl font-extrabold tracking-tight [font-stretch:118%] ${inverted ? 'text-white' : 'text-ink'}`}
+        className={`text-[26px] leading-none font-extrabold tracking-tight [font-stretch:120%] ${inverted ? 'text-white' : 'text-ink'}`}
       >
-        construye<span className="text-obra">conecta</span>
+        cuadra
       </span>
     </span>
   );

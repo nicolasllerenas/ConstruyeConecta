@@ -37,7 +37,7 @@ const NAVIGATION: Record<Role, NavItem[]> = {
   ],
   specialist: [
     { href: '/solicitudes', label: 'Solicitudes', icon: Inbox },
-    { href: '/matches', label: 'Matches', icon: Handshake },
+    { href: '/matches', label: 'Propuestas', icon: Handshake },
     { href: '/obra', label: 'Mis trabajos', icon: BriefcaseBusiness },
     { href: '/perfil', label: 'Perfil', icon: UserRound },
   ],

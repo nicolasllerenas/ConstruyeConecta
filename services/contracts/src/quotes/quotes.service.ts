@@ -185,7 +185,7 @@ export class QuotesService {
         await this.services.post(
           'marketplace',
           `/internal/projects/${quote.projectId}/contracted`,
-          {},
+          { specialistId: quote.specialistId },
         );
         return id;
       });

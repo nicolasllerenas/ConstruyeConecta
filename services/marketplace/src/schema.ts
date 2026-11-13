@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   doublePrecision,
   index,
   integer,
@@ -65,6 +66,8 @@ export const specialistDetails = marketplace.table('specialist_details', {
   visitFeeCents: integer('visit_fee_cents').notNull(),
   availability: text('availability').notNull(),
   avatarUrl: text('avatar_url'),
+  credential: text('credential'),
+  yearsExperience: integer('years_experience'),
   verified: boolean('verified').notNull().default(false),
   plan: planEnum('plan').notNull().default('free'),
   planExpiresAt: timestamp('plan_expires_at', { withTimezone: true }),
@@ -101,6 +104,7 @@ export const projects = marketplace.table(
     budgetMinCents: integer('budget_min_cents').notNull(),
     budgetMaxCents: integer('budget_max_cents').notNull(),
     timing: projectTimingEnum('timing').notNull(),
+    estimatedDate: date('estimated_date', { mode: 'string' }),
     district: text('district').notNull(),
     latitude: doublePrecision('latitude').notNull(),
     longitude: doublePrecision('longitude').notNull(),

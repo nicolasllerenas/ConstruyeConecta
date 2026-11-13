@@ -77,6 +77,10 @@ export function ProfileForm({
   const [availability, setAvailability] = useState(
     profile?.specialist?.availability ?? 'Lun a sáb, 8:00 a 18:00',
   );
+  const [credential, setCredential] = useState(profile?.specialist?.credential ?? '');
+  const [yearsExperience, setYearsExperience] = useState(
+    profile?.specialist?.yearsExperience?.toString() ?? '',
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,6 +135,8 @@ export function ProfileForm({
               visitFeeCents: Math.round(Number(visitFee) * 100),
               availability,
               avatarUrl: profile?.specialist?.avatarUrl ?? undefined,
+              credential: credential.trim() || undefined,
+              yearsExperience: yearsExperience === '' ? undefined : Number(yearsExperience),
             });
       onSaved(saved);
     } catch (caught) {
@@ -197,6 +203,32 @@ export function ProfileForm({
               ))}
             </div>
           </fieldset>
+          <div className="grid gap-4 sm:grid-cols-[1.6fr_1fr]">
+            <Field label="Credencial (opcional)" hint="Las familias la ven antes de elegirte.">
+              {(id) => (
+                <Input
+                  id={id}
+                  maxLength={80}
+                  placeholder="Ingeniero civil colegiado (CIP)"
+                  value={credential}
+                  onChange={(event) => setCredential(event.target.value)}
+                />
+              )}
+            </Field>
+            <Field label="Años de experiencia">
+              {(id) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min="0"
+                  max="60"
+                  inputMode="numeric"
+                  value={yearsExperience}
+                  onChange={(event) => setYearsExperience(event.target.value)}
+                />
+              )}
+            </Field>
+          </div>
           <Field label="Cuéntale a las familias sobre tu trabajo" hint="Mínimo 20 caracteres.">
             {(id) => (
               <Textarea

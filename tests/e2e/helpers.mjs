@@ -51,7 +51,7 @@ export class Actor {
 }
 
 export function testEmail(label) {
-  return `e2e.${label}.${randomUUID().slice(0, 8)}@construyeconecta.test`;
+  return `e2e.${label}.${randomUUID().slice(0, 8)}@cuadra.test`;
 }
 
 export const LOCATION = {
@@ -78,7 +78,7 @@ export async function registerFamily(name = 'Familia E2E') {
   return Object.assign(actor, { id: user.id });
 }
 
-export async function registerSpecialist(name = 'Ing. E2E') {
+export async function registerSpecialist(name = 'Ing. E2E', location = LOCATION) {
   const actor = new Actor();
   const { user } = await actor.ok('POST', 'session/register', {
     email: testEmail('specialist'),
@@ -87,7 +87,7 @@ export async function registerSpecialist(name = 'Ing. E2E') {
     role: 'specialist',
   });
   await actor.ok('PUT', 'marketplace/profile/specialist', {
-    ...LOCATION,
+    ...location,
     displayName: name,
     phone: '912345678',
     kind: 'engineer',
@@ -95,6 +95,8 @@ export async function registerSpecialist(name = 'Ing. E2E') {
     specialties: ['Ampliaciones', 'Estructuras'],
     visitFeeCents: 8000,
     availability: 'Lun a sáb',
+    credential: 'Ingeniero civil colegiado (CIP)',
+    yearsExperience: 8,
   });
   return Object.assign(actor, { id: user.id });
 }
@@ -107,6 +109,7 @@ export const PROJECT = {
   budgetMinCents: 5_000_000,
   budgetMaxCents: 6_000_000,
   timing: 'within_3_months',
+  estimatedDate: '2027-02-15',
 };
 
 export const QUOTE_VERSION = {

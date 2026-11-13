@@ -3,7 +3,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/session-cookies';
 
 const BLOB_ORIGINS = 'https://*.public.blob.vercel-storage.com';
-const PUBLIC_PATHS = new Set(['/', '/login', '/registro']);
+const GUEST_PATHS = new Set(['/', '/login', '/registro']);
+const OPEN_PATHS = new Set(['/demo']);
 
 function contentSecurityPolicy(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -38,12 +39,14 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(ACCESS_COOKIE) || request.cookies.has(REFRESH_COOKIE);
 
-  if (!PUBLIC_PATHS.has(pathname) && !hasSession) {
+  const isGuestPath = GUEST_PATHS.has(pathname);
+
+  if (!isGuestPath && !OPEN_PATHS.has(pathname) && !hasSession) {
     const login = new URL('/login', request.url);
     login.searchParams.set('next', pathname);
     return NextResponse.redirect(login);
   }
-  if (PUBLIC_PATHS.has(pathname) && hasSession) {
+  if (isGuestPath && hasSession) {
     const home = roleHome(request);
     if (home) {
       return NextResponse.redirect(new URL(home, request.url));
@@ -69,5 +72,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icon.svg|robots.txt).*)'],
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|icons/|manifest.webmanifest|robots.txt).*)',
+  ],
 };

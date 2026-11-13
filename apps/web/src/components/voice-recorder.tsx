@@ -3,7 +3,7 @@
 import clsx from 'clsx';
 import { Loader2, Mic, Square, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { uploadFile } from '@/lib/upload';
+import { type Uploader, uploadFile } from '@/lib/upload';
 import { ErrorNote } from './ui';
 
 const MAX_SECONDS = 120;
@@ -11,9 +11,11 @@ const MAX_SECONDS = 120;
 export function VoiceRecorder({
   url,
   onChange,
+  upload = uploadFile,
 }: {
   url: string | undefined;
   onChange: (url: string | undefined) => void;
+  upload?: Uploader;
 }) {
   const recorder = useRef<MediaRecorder | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -57,7 +59,7 @@ export function VoiceRecorder({
         const extension = type.includes('mp4') ? 'mp4' : 'webm';
         setUploading(true);
         try {
-          onChange(await uploadFile(new Blob(chunks, { type }), `nota-de-voz.${extension}`));
+          onChange(await upload(new Blob(chunks, { type }), `nota-de-voz.${extension}`));
         } catch {
           setError('No pudimos subir tu audio. Inténtalo de nuevo.');
         } finally {

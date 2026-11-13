@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { PROJECT, QUOTE_VERSION, registerFamily, registerSpecialist } from './helpers.mjs';
+import {
+  LOCATION,
+  PROJECT,
+  QUOTE_VERSION,
+  registerFamily,
+  registerSpecialist,
+} from './helpers.mjs';
 
 test('una familia y un especialista completan la obra de punta a punta', async () => {
   const family = await registerFamily();
@@ -9,11 +15,16 @@ test('una familia y un especialista completan la obra de punta a punta', async (
 
   const project = await family.ok('POST', 'marketplace/projects', PROJECT);
   assert.equal(project.status, 'open');
+  assert.equal(project.estimatedDate, '2027-02-15');
 
   const candidates = await family.ok('GET', `marketplace/projects/${project.id}/candidates`);
   const card = candidates.find((item) => item.id === specialist.id);
   assert.ok(card, 'el especialista cercano aparece como candidato');
   assert.ok(card.affinity > 50);
+  assert.equal(card.credential, 'Ingeniero civil colegiado (CIP)');
+  assert.equal(card.yearsExperience, 8);
+  assert.equal(card.level, 'new');
+  assert.ok(card.reasons.includes('Hace ampliaciones'));
   assert.equal('phone' in card, false, 'el celular no se expone antes del match');
 
   const firstLike = await family.ok('POST', 'marketplace/swipes/family', {
@@ -21,11 +32,12 @@ test('una familia y un especialista completan la obra de punta a punta', async (
     specialistId: specialist.id,
     decision: 'like',
   });
-  assert.equal(firstLike.matched, false, 'un solo interés no es match');
+  assert.equal(firstLike.matched, false, 'invitar no crea la propuesta por sí solo');
 
   const feed = await specialist.ok('GET', 'marketplace/feed');
   const slide = feed.find((item) => item.id === project.id);
   assert.equal(slide.invited, true);
+  assert.equal(slide.matchesSpecialty, true);
   assert.equal('address' in slide, false, 'la dirección no se expone antes del match');
 
   const mutual = await specialist.ok('POST', 'marketplace/swipes/specialist', {
@@ -34,17 +46,20 @@ test('una familia y un especialista completan la obra de punta a punta', async (
   });
   assert.equal(mutual.matched, true);
 
-  await family.ok('POST', 'marketplace/swipes/family', {
-    projectId: project.id,
-    specialistId: rival.id,
-    decision: 'like',
-  });
   const rivalMatch = await rival.ok('POST', 'marketplace/swipes/specialist', {
     projectId: project.id,
     decision: 'like',
   });
+  assert.equal(rivalMatch.matched, true, 'un especialista cercano puede cotizar sin invitación');
+  const rivalView = await rival.ok('GET', `marketplace/matches/${rivalMatch.matchId}`);
+  assert.equal(rivalView.contactShared, false);
+  assert.equal(rivalView.address, null, 'la dirección no se comparte sin invitación');
+  assert.equal(rivalView.counterpartPhone, null, 'el celular no se comparte sin invitación');
+  const familyView = await family.ok('GET', `marketplace/matches/${rivalMatch.matchId}`);
+  assert.equal(familyView.counterpartPhone, '912345678');
 
   const match = await specialist.ok('GET', `marketplace/matches/${mutual.matchId}`);
+  assert.equal(match.contactShared, true);
   assert.equal(match.address, 'Av. Primavera 1250');
   assert.equal(match.counterpartPhone, '987654321');
 
@@ -199,6 +214,36 @@ test('una familia y un especialista completan la obra de punta a punta', async (
   assert.equal(updatedCard.rating, 4);
   assert.equal(updatedCard.reviewCount, 1);
   assert.equal(updatedCard.completedJobs, 1);
+});
+
+test('un especialista fuera de la zona solo cotiza si la familia lo invita', async () => {
+  const family = await registerFamily();
+  const distant = await registerSpecialist('Ing. Lejano', {
+    ...LOCATION,
+    district: 'Ventanilla',
+    latitude: -11.8747,
+    longitude: -77.1278,
+    radiusKm: 5,
+  });
+  const project = await family.ok('POST', 'marketplace/projects', PROJECT);
+  const rejected = await distant.call('POST', 'marketplace/swipes/specialist', {
+    projectId: project.id,
+    decision: 'like',
+  });
+  assert.equal(rejected.status, 403);
+
+  await family.ok('POST', 'marketplace/swipes/family', {
+    projectId: project.id,
+    specialistId: distant.id,
+    decision: 'like',
+  });
+  const invited = await distant.ok('POST', 'marketplace/swipes/specialist', {
+    projectId: project.id,
+    decision: 'like',
+  });
+  assert.equal(invited.matched, true);
+  const view = await distant.ok('GET', `marketplace/matches/${invited.matchId}`);
+  assert.equal(view.contactShared, true);
 });
 
 test('el plan Básico limita las cotizaciones y Pro lo desbloquea', async () => {

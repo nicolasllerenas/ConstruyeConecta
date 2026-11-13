@@ -1,42 +1,27 @@
 'use client';
 
-import type { ProjectCard, QuoteView, SpecialistCard } from '@cc/contracts';
+import type { MatchSummary, ProjectCard, QuoteView, SpecialistCard } from '@cc/contracts';
 import { ArrowLeft, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { QuoteBreakdown } from '@/components/quote-breakdown';
+import { CredentialLine } from '@/components/specialist-profile';
 import {
   Avatar,
   Button,
-  Card,
   ErrorNote,
   Field,
   LinkButton,
   Loading,
-  PilotPaymentNote,
   Rating,
+  StepIndicator,
   Textarea,
+  WhatsAppButton,
 } from '@/components/ui';
 import { errorMessage, request, useApi } from '@/lib/api';
-import { QUOTE_STATUS_LABELS, soles } from '@/lib/format';
+import { contactMessage } from '@/lib/format';
 import { useViewer } from '../../viewer';
-
-function BudgetBar({ totalCents, maxCents }: { totalCents: number; maxCents: number }) {
-  const within = totalCents <= maxCents;
-  return (
-    <>
-      <div className="h-2 rounded-full bg-night-line">
-        <div
-          style={{ width: `${Math.min(100, (totalCents / maxCents) * 100)}%` }}
-          className={`h-2 rounded-full ${within ? 'bg-[#3ddc97]' : 'bg-obra'}`}
-        />
-      </div>
-      <p className={`text-[13px] ${within ? 'text-[#9fe8c6]' : 'text-obra'}`}>
-        {within ? 'Dentro de' : 'Por encima de'} tu presupuesto (máx. {soles(maxCents)})
-      </p>
-    </>
-  );
-}
 
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +34,7 @@ export default function QuoteDetailPage() {
     quote ? `marketplace/specialists?ids=${quote.specialistId}` : null,
   );
   const projects = useApi<ProjectCard[]>(isFamily ? 'marketplace/projects/mine' : null);
+  const match = useApi<MatchSummary>(quote ? `marketplace/matches/${quote.matchId}` : null);
   const [adjusting, setAdjusting] = useState(false);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,7 +49,6 @@ export default function QuoteDetailPage() {
 
   const specialist = specialists.data?.[0];
   const project = projects.data?.find((item) => item.id === quote.projectId);
-  const { current } = quote;
   const canDecide = isFamily && quote.status === 'submitted';
 
   const run = async (action: () => Promise<void>) => {
@@ -95,23 +80,9 @@ export default function QuoteDetailPage() {
       await quoteQuery.mutate();
     });
 
-  const rows = [
-    { label: 'Materiales', value: soles(current.materialsCents) },
-    { label: 'Mano de obra', value: soles(current.laborCents) },
-    {
-      label: 'Permisos y supervisión',
-      value: current.permitsCents === null ? 'No incluye' : soles(current.permitsCents),
-      warn: current.permitsCents === null,
-    },
-    {
-      label: 'Adicionales posibles',
-      value: current.extrasCents === null ? 'Sin definir' : soles(current.extrasCents),
-      warn: current.extrasCents === null || current.extrasCents > 0,
-    },
-  ];
-
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
+      {isFamily ? <StepIndicator current={2} /> : null}
       <div className="flex items-center gap-3">
         <Link
           href={isFamily ? `/ofertas?obra=${quote.projectId}` : '/matches'}
@@ -120,84 +91,26 @@ export default function QuoteDetailPage() {
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Link>
-        <Avatar name={specialist?.displayName ?? ''} url={specialist?.avatarUrl} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-bold">{specialist?.displayName ?? 'Especialista'}</h1>
-          <div className="flex items-center gap-2 text-[13px] text-muted">
-            {specialist?.verified ? <span className="font-bold text-visto">Verificado</span> : null}
-            <Rating value={specialist?.rating ?? null} count={specialist?.reviewCount} />
+        <Link
+          href={`/especialistas/${quote.specialistId}`}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl hover:bg-white/70"
+        >
+          <Avatar name={specialist?.displayName ?? ''} url={specialist?.avatarUrl} />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-bold">{specialist?.displayName ?? 'Especialista'}</h1>
+            <div className="flex items-center gap-2 text-[13px] text-muted">
+              {specialist?.verified ? (
+                <span className="font-bold text-visto">Verificado</span>
+              ) : null}
+              <Rating value={specialist?.rating ?? null} count={specialist?.reviewCount} />
+              <span className="font-bold text-plano-text underline">Ver perfil</span>
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
+      {specialist ? <CredentialLine specialist={specialist} /> : null}
 
-      <section className="flex flex-col gap-2.5 rounded-3xl bg-ink p-5 text-white">
-        <div className="flex justify-between gap-3 text-[13px]">
-          <span className="text-mist">Total · {quote.projectTitle}</span>
-          <span className="shrink-0 font-bold text-obra">
-            v{current.version} · {QUOTE_STATUS_LABELS[quote.status]}
-          </span>
-        </div>
-        <p className="text-[40px] leading-none font-extrabold tracking-tight [font-stretch:118%]">
-          {soles(current.totalCents)}
-        </p>
-        <p className="text-sm leading-snug text-mist">
-          {current.durationWeeks} semanas.
-          {quote.previousTotalCents !== null
-            ? ` Antes ${soles(quote.previousTotalCents)}${current.changeNote ? `: ${current.changeNote}` : '.'}`
-            : ''}
-        </p>
-        {project ? (
-          <BudgetBar totalCents={current.totalCents} maxCents={project.budgetMaxCents} />
-        ) : null}
-      </section>
-
-      {quote.adjustmentMessage ? (
-        <p className="rounded-xl bg-obra-soft px-3.5 py-3 text-sm">
-          <strong>Ajuste pedido:</strong> {quote.adjustmentMessage}
-        </p>
-      ) : null}
-
-      <Card className="py-1">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className={`flex justify-between gap-3 border-b border-line/60 py-3 text-[15px] ${row.warn ? 'text-obra-text' : ''}`}
-          >
-            <span>{row.label}</span>
-            <span className="font-bold whitespace-nowrap">{row.value}</span>
-          </div>
-        ))}
-        <p className="py-2.5 text-[13px] text-muted">
-          Formato estándar: todas las cotizaciones muestran estos mismos rubros.
-        </p>
-      </Card>
-
-      <Card>
-        <h2 className="mb-1 text-[15px] font-bold">Qué incluye</h2>
-        <p className="text-[15px] leading-relaxed text-muted">{current.scope}</p>
-      </Card>
-
-      <section className="flex flex-col gap-2.5">
-        <h2 className="text-[15px] font-bold">Pagos por etapa</h2>
-        {current.stages.map((stage, index) => (
-          <div
-            key={stage.id}
-            className="flex items-center gap-3 rounded-2xl border border-line bg-white px-3.5 py-2.5"
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ink font-extrabold text-white">
-              {index + 1}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-bold">{stage.name}</span>
-              <span className="text-[13px] text-muted">
-                Semanas {stage.weekFrom}–{stage.weekTo}
-              </span>
-            </span>
-            <span className="font-extrabold whitespace-nowrap">{soles(stage.amountCents)}</span>
-          </div>
-        ))}
-        <PilotPaymentNote />
-      </section>
+      <QuoteBreakdown quote={quote} budgetMaxCents={project?.budgetMaxCents} />
 
       <ErrorNote message={error} />
 
@@ -223,14 +136,22 @@ export default function QuoteDetailPage() {
           </div>
         </div>
       ) : canDecide ? (
-        <div className="grid grid-cols-[1fr_1.5fr] gap-2.5">
-          <Button variant="outline" onClick={() => setAdjusting(true)}>
-            Pedir ajuste
-          </Button>
+        <div className="flex flex-col gap-2.5">
           <Button busy={busy} onClick={choose}>
             <Check className="size-5" aria-hidden="true" />
-            Elegir
+            Elegir a {specialist?.displayName ?? 'este especialista'}
           </Button>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Button variant="outline" onClick={() => setAdjusting(true)}>
+              Pedir ajuste
+            </Button>
+            {match.data?.counterpartPhone ? (
+              <WhatsAppButton
+                phone={match.data.counterpartPhone}
+                text={contactMessage(quote.projectTitle)}
+              />
+            ) : null}
+          </div>
         </div>
       ) : null}
 

@@ -6,7 +6,12 @@ import { useState } from 'react';
 import { MatchScreen } from '@/components/match-screen';
 import { Avatar, DemoBadge, ErrorNote, Loading, Rating } from '@/components/ui';
 import { errorMessage, request, useApi } from '@/lib/api';
-import { compactNumber, PROJECT_KIND_LABELS, PROJECT_TIMING_LABELS } from '@/lib/format';
+import {
+  compactNumber,
+  PROJECT_KIND_LABELS,
+  PROJECT_TIMING_LABELS,
+  shortCalendarDate,
+} from '@/lib/format';
 
 function RequestSlide({
   project,
@@ -53,14 +58,14 @@ function RequestSlide({
           <div className="flex flex-col items-center gap-1">
             <button
               type="button"
-              aria-label="Me interesa"
+              aria-label="Cotizar esta obra"
               onClick={() => onDecision('like')}
               className="flex size-15 items-center justify-center rounded-full border-4 border-ink bg-plano transition hover:scale-105"
             >
               <Check className="size-7" strokeWidth={2.8} aria-hidden="true" />
             </button>
             <span className="text-xs font-bold [text-shadow:0_1px_3px_rgb(0_0_0/0.9)]">
-              Me interesa
+              Cotizar
             </span>
           </div>
           <div className="flex flex-col items-center gap-1">
@@ -95,8 +100,15 @@ function RequestSlide({
           {project.invited ? (
             <span className="rounded-lg bg-plano px-2 py-1 text-xs font-extrabold">TE INVITÓ</span>
           ) : null}
+          {project.matchesSpecialty ? (
+            <span className="rounded-lg bg-visto px-2 py-1 text-xs font-extrabold">
+              ES TU ESPECIALIDAD
+            </span>
+          ) : null}
           <span className="rounded-lg bg-obra px-2 py-1 text-xs font-extrabold text-ink uppercase">
-            {PROJECT_TIMING_LABELS[project.timing]}
+            {project.estimatedDate
+              ? `Inicio ${shortCalendarDate(project.estimatedDate)}`
+              : PROJECT_TIMING_LABELS[project.timing]}
           </span>
           <span className="rounded-lg bg-night px-2 py-1 text-xs font-bold">
             {PROJECT_KIND_LABELS[project.kind]}
@@ -212,12 +224,18 @@ export default function RequestsFeedPage() {
       )}
       {match ? (
         <MatchScreen
-          counterpart={match.project.familyName}
-          projectTitle={match.project.title}
+          title={match.project.invited ? '¡Es match!' : '¡A cotizar!'}
+          message={
+            <>
+              Ya puedes enviarle tu cotización a{' '}
+              <strong className="text-white">{match.project.familyName}</strong> por{' '}
+              <strong className="text-white">{match.project.title}</strong>.
+            </>
+          }
           steps={[
-            'Coordina la visita para evaluar la obra.',
-            'Envía tu cotización en formato estándar.',
-            'La familia la compara y elige.',
+            'Envía tu cotización con los mismos rubros que todos.',
+            'La familia la compara lado a lado y puede pedirte ajustes.',
+            'Si te invita o te elige, verás su dirección y celular.',
           ]}
           primaryHref={`/cotizar/${match.id}`}
           primaryLabel="Enviar cotización"

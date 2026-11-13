@@ -19,9 +19,10 @@ import {
   Loading,
   PilotPaymentNote,
   Textarea,
+  WhatsAppButton,
 } from '@/components/ui';
 import { errorMessage, request, useApi } from '@/lib/api';
-import { STAGE_STATUS_LABELS, shortDate, soles, whatsappLink } from '@/lib/format';
+import { contactMessage, STAGE_STATUS_LABELS, shortDate, soles } from '@/lib/format';
 import { useViewer } from '../../viewer';
 
 const STAGE_TONES: Record<ContractStageView['status'], { dot: string; text: string }> = {
@@ -103,18 +104,12 @@ export default function ContractPage() {
             {match ? ' · ' : ''}Inició el {shortDate(contract.startedAt)}
           </p>
         </div>
-        {match ? (
-          <a
-            href={whatsappLink(
-              match.counterpartPhone,
-              `Hola, te escribo por la obra "${contract.projectTitle}".`,
-            )}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-ink px-3 text-sm font-bold text-white"
-          >
-            WhatsApp
-          </a>
+        {match?.counterpartPhone ? (
+          <WhatsAppButton
+            phone={match.counterpartPhone}
+            text={contactMessage(contract.projectTitle)}
+            className="min-h-11 shrink-0 rounded-xl px-3 text-sm"
+          />
         ) : null}
       </header>
 

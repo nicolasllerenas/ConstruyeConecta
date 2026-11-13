@@ -12,9 +12,14 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: 'ConstruyeConecta',
+  title: {
+    default: 'Cuadra · Tu obra, con quien sabe hacerla',
+    template: '%s · Cuadra',
+  },
+  applicationName: 'Cuadra',
   description:
-    'Compara cotizaciones desglosadas de especialistas y evita gastos sorpresa en tu obra.',
+    'Compara cotizaciones claras de especialistas y sabe exactamente qué pagas, sin gastos sorpresa.',
+  appleWebApp: { capable: true, title: 'Cuadra', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {

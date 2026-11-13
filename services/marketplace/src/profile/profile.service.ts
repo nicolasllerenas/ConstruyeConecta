@@ -74,6 +74,8 @@ export class ProfileService {
         visitFeeCents: details.visitFeeCents,
         availability: details.availability,
         avatarUrl: details.avatarUrl,
+        credential: details.credential,
+        yearsExperience: details.yearsExperience,
         verified: details.verified,
         plan: details.plan,
         planExpiresAt: details.planExpiresAt?.toISOString() ?? null,
@@ -100,6 +102,8 @@ export class ProfileService {
       visitFeeCents: input.visitFeeCents,
       availability: input.availability,
       avatarUrl: input.avatarUrl ?? null,
+      credential: input.credential ?? null,
+      yearsExperience: input.yearsExperience ?? null,
     };
     await this.db.transaction(async (tx) => {
       await tx

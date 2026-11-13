@@ -13,6 +13,9 @@ export const SPECIALIST_KINDS = ['engineer', 'architect', 'master_builder', 'tec
 export const specialistKindSchema = z.enum(SPECIALIST_KINDS);
 export type SpecialistKind = z.infer<typeof specialistKindSchema>;
 
+export const SPECIALIST_LEVELS = ['new', 'bronze', 'silver', 'gold'] as const;
+export type SpecialistLevel = (typeof SPECIALIST_LEVELS)[number];
+
 export const SPECIALTIES = [
   'Ampliaciones',
   'Construcción nueva',
@@ -62,8 +65,12 @@ export const specialistProfileSchema = familyProfileSchema.extend({
   visitFeeCents: z.number().int().min(0).max(100_000),
   availability: z.string().trim().min(3).max(80),
   avatarUrl: mediaUrlSchema.optional(),
+  credential: z.string().trim().min(3).max(80).optional(),
+  yearsExperience: z.number().int().min(0).max(60).optional(),
 });
 export type SpecialistProfileInput = z.infer<typeof specialistProfileSchema>;
+
+const isoDateSchema = z.iso.date('Ingresa una fecha válida');
 
 export const portfolioItemSchema = z.object({
   url: mediaUrlSchema,
@@ -81,6 +88,7 @@ export const createProjectSchema = z
     budgetMinCents: z.number().int().positive().max(100_000_000),
     budgetMaxCents: z.number().int().positive().max(100_000_000),
     timing: projectTimingSchema,
+    estimatedDate: isoDateSchema.optional(),
     highlight: z.boolean().default(false),
   })
   .refine((value) => value.budgetMaxCents >= value.budgetMinCents, {
@@ -124,10 +132,14 @@ export interface SpecialistCard {
   visitFeeCents: number;
   availability: string;
   avatarUrl: string | null;
+  credential: string | null;
+  yearsExperience: number | null;
   verified: boolean;
   pro: boolean;
   demo: boolean;
+  level: SpecialistLevel;
   affinity: number | null;
+  reasons: string[];
   rating: number | null;
   reviewCount: number;
   completedJobs: number;
@@ -146,10 +158,12 @@ export interface ProjectCard {
   budgetMinCents: number;
   budgetMaxCents: number;
   timing: ProjectTiming;
+  estimatedDate: string | null;
   district: string;
   distanceKm: number | null;
   highlighted: boolean;
   invited: boolean;
+  matchesSpecialty: boolean;
   status: 'open' | 'contracted' | 'closed';
   demo: boolean;
   familyRating: number | null;
@@ -172,8 +186,9 @@ export interface MatchSummary {
   specialistName: string;
   familyId: string;
   familyName: string;
-  counterpartPhone: string;
-  address: string;
+  contactShared: boolean;
+  counterpartPhone: string | null;
+  address: string | null;
   reference: string | null;
   district: string;
   createdAt: string;
@@ -196,6 +211,8 @@ export interface MyProfile {
     visitFeeCents: number;
     availability: string;
     avatarUrl: string | null;
+    credential: string | null;
+    yearsExperience: number | null;
     verified: boolean;
     plan: 'free' | 'pro';
     planExpiresAt: string | null;

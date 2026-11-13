@@ -16,6 +16,12 @@ function required(name) {
 
 async function ensureRole(client, role, password) {
   const { rowCount } = await client.query('SELECT 1 FROM pg_roles WHERE rolname = $1', [role]);
+  if (rowCount > 0 && !password) {
+    return;
+  }
+  if (!password) {
+    throw new Error(`Missing password for new role ${role}`);
+  }
   const statement = rowCount === 0 ? 'CREATE ROLE' : 'ALTER ROLE';
   const literal = client.escapeLiteral(password);
   await client.query(`${statement} ${client.escapeIdentifier(role)} LOGIN PASSWORD ${literal}`);
@@ -44,7 +50,7 @@ for (const service of SERVICES) {
     continue;
   }
   const role = `${service}_service`;
-  await ensureRole(client, role, required(`DB_PASSWORD_${service.toUpperCase()}`));
+  await ensureRole(client, role, process.env[`DB_PASSWORD_${service.toUpperCase()}`]);
   await migrate(db, {
     migrationsFolder: folder,
     migrationsSchema: 'migrations',

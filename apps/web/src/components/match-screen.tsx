@@ -3,19 +3,20 @@
 import { X } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { LogoMark } from './logo';
 import { LinkButton } from './ui';
 
 export function MatchScreen({
-  counterpart,
-  projectTitle,
+  title = '¡Es match!',
+  message,
   steps,
   primaryHref,
   primaryLabel,
   onClose,
 }: {
-  counterpart: string;
-  projectTitle: string;
+  title?: string;
+  message: ReactNode;
   steps: string[];
   primaryHref: string;
   primaryLabel: string;
@@ -25,7 +26,7 @@ export function MatchScreen({
     <motion.div
       role="dialog"
       aria-modal="true"
-      aria-label="Es match"
+      aria-label={title}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink text-white"
@@ -46,12 +47,9 @@ export function MatchScreen({
             transition={{ type: 'spring', stiffness: 260, damping: 14 }}
             className="text-6xl leading-none font-extrabold tracking-tight text-obra [font-stretch:125%]"
           >
-            ¡Es match!
+            {title}
           </motion.h2>
-          <p className="max-w-xs text-mist">
-            A <strong className="text-white">{counterpart}</strong> también le interesa{' '}
-            <strong className="text-white">{projectTitle}</strong>.
-          </p>
+          <p className="max-w-xs text-mist">{message}</p>
         </div>
         <div className="flex justify-center py-4">
           <div className="flex size-24 items-center justify-center rounded-full bg-white">

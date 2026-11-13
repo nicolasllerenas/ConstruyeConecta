@@ -1,10 +1,13 @@
-import type {
-  FamilySwipeInput,
-  MatchSummary,
-  ProjectCard,
-  SpecialistCard,
-  SpecialistSwipeInput,
-  SwipeResult,
+import {
+  distanceKm,
+  type FamilySwipeInput,
+  KIND_SPECIALTIES,
+  type MatchSummary,
+  PROJECT_KINDS,
+  type ProjectCard,
+  type SpecialistCard,
+  type SpecialistSwipeInput,
+  type SwipeResult,
 } from '@cc/contracts';
 import {
   ConflictException,
@@ -15,9 +18,9 @@ import {
 } from '@nestjs/common';
 import { and, desc, eq, inArray, notExists, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { calculateAffinity } from '../affinity.js';
 import { type Database, DB } from '../database.js';
 import { ProjectService, toProjectCard } from '../project/project.service.js';
+import { rankSpecialist, specialistLevel, withNewcomerSlot } from '../ranking.js';
 import { ReputationClient } from '../reputation.client.js';
 import {
   matches,
@@ -31,6 +34,24 @@ import {
 const CANDIDATE_POOL = 60;
 const PAGE_SIZE = 20;
 const ROUND_DISTANCE = 10;
+
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+function familyInvited(projectId: SQL | string, specialistId: SQL | string): SQL<boolean> {
+  return sql<boolean>`exists (
+    select 1 from ${swipes}
+    where ${swipes.projectId} = ${projectId}
+      and ${swipes.specialistId} = ${specialistId}
+      and ${swipes.actor} = 'family'
+      and ${swipes.decision} = 'like'
+  )`;
+}
+
+function coveredKinds(specialties: string[]): (typeof PROJECT_KINDS)[number][] {
+  return PROJECT_KINDS.filter((kind) =>
+    KIND_SPECIALTIES[kind].some((specialty) => specialties.includes(specialty)),
+  );
+}
 
 function distanceExpression(
   latitude: number | SQL,
@@ -89,9 +110,10 @@ export class MatchingService {
       kind: project.kind,
       radiusKm: project.radiusKm,
     });
-    return cards
-      .sort((a, b) => Number(b.pro) - Number(a.pro) || (b.affinity ?? 0) - (a.affinity ?? 0))
-      .slice(0, PAGE_SIZE);
+    return withNewcomerSlot(cards.sort((a, b) => (b.affinity ?? 0) - (a.affinity ?? 0))).slice(
+      0,
+      PAGE_SIZE,
+    );
   }
 
   async specialistsByIds(ids: string[]): Promise<SpecialistCard[]> {
@@ -107,32 +129,39 @@ export class MatchingService {
   }
 
   async feed(specialistId: string): Promise<ProjectCard[]> {
-    const [me] = await this.db.select().from(profiles).where(eq(profiles.userId, specialistId));
+    const [me] = await this.db
+      .select({ profile: profiles, specialties: specialistDetails.specialties })
+      .from(profiles)
+      .innerJoin(specialistDetails, eq(specialistDetails.userId, profiles.userId))
+      .where(eq(profiles.userId, specialistId));
     if (!me) {
       throw new ConflictException('Completa tu perfil para ver obras cerca de ti');
     }
+    const kinds = coveredKinds(me.specialties);
     const distance = distanceExpression(
-      me.latitude,
-      me.longitude,
+      me.profile.latitude,
+      me.profile.longitude,
       sql`${projects.latitude}`,
       sql`${projects.longitude}`,
     );
-    const invited = sql<boolean>`exists (
-      select 1 from ${swipes}
-      where ${swipes.projectId} = ${projects.id}
-        and ${swipes.specialistId} = ${specialistId}
-        and ${swipes.actor} = 'family'
-        and ${swipes.decision} = 'like'
-    )`;
+    const invited = familyInvited(sql`${projects.id}`, specialistId);
+    const matchesSpecialty =
+      kinds.length > 0 ? sql<boolean>`(${inArray(projects.kind, kinds)})` : sql<boolean>`false`;
     const highlighted = sql<boolean>`coalesce(${projects.highlightedUntil} > now(), false)`;
     const rows = await this.db
-      .select({ project: projects, familyName: profiles.displayName, distance, invited })
+      .select({
+        project: projects,
+        familyName: profiles.displayName,
+        distance,
+        invited,
+        matchesSpecialty,
+      })
       .from(projects)
       .innerJoin(profiles, eq(profiles.userId, projects.familyId))
       .where(
         and(
           eq(projects.status, 'open'),
-          or(sql`${distance} <= ${me.radiusKm}`, invited),
+          or(sql`${distance} <= ${me.profile.radiusKm}`, invited),
           notExists(
             this.db
               .select({ one: sql`1` })
@@ -147,7 +176,13 @@ export class MatchingService {
           ),
         ),
       )
-      .orderBy(desc(invited), desc(highlighted), distance, desc(projects.createdAt))
+      .orderBy(
+        desc(invited),
+        desc(matchesSpecialty),
+        desc(highlighted),
+        distance,
+        desc(projects.createdAt),
+      )
       .limit(PAGE_SIZE);
     const reputations = await this.reputation.summaries(rows.map((row) => row.project.familyId));
     return rows.map((row) => {
@@ -155,6 +190,7 @@ export class MatchingService {
       return toProjectCard(row.project, row.familyName, {
         distanceKm: Math.round(row.distance * ROUND_DISTANCE) / ROUND_DISTANCE,
         invited: row.invited,
+        matchesSpecialty: row.matchesSpecialty,
         familyRating: reputation?.rating ?? null,
         familyReviewCount: reputation?.reviewCount ?? 0,
       });
@@ -181,6 +217,9 @@ export class MatchingService {
   async swipeAsSpecialist(specialistId: string, input: SpecialistSwipeInput): Promise<SwipeResult> {
     return this.db.transaction(async (tx) => {
       const project = await this.lockOpenProject(tx, input.projectId);
+      if (input.decision === 'like') {
+        await this.assertWithinReach(tx, project, specialistId);
+      }
       return this.recordSwipe(tx, project, specialistId, 'specialist', input.decision);
     });
   }
@@ -213,33 +252,69 @@ export class MatchingService {
     const family = alias(profiles, 'family');
     const specialist = alias(profiles, 'specialist');
     const rows = await this.db
-      .select({ match: matches, project: projects, family, specialist })
+      .select({
+        match: matches,
+        project: projects,
+        family,
+        specialist,
+        invited: familyInvited(sql`${matches.projectId}`, sql`${matches.specialistId}`),
+      })
       .from(matches)
       .innerJoin(projects, eq(projects.id, matches.projectId))
       .innerJoin(family, eq(family.userId, matches.familyId))
       .innerJoin(specialist, eq(specialist.userId, matches.specialistId))
       .where(condition)
       .orderBy(desc(matches.createdAt));
-    return rows.map((row) => ({
-      id: row.match.id,
-      projectId: row.project.id,
-      projectTitle: row.project.title,
-      budgetMinCents: row.project.budgetMinCents,
-      budgetMaxCents: row.project.budgetMaxCents,
-      specialistId: row.match.specialistId,
-      specialistName: row.specialist.displayName,
-      familyId: row.match.familyId,
-      familyName: row.family.displayName,
-      counterpartPhone: viewerId === row.match.familyId ? row.specialist.phone : row.family.phone,
-      address: row.family.address,
-      reference: row.family.reference,
-      district: row.family.district,
-      createdAt: row.match.createdAt.toISOString(),
-    }));
+    return rows.map((row) => {
+      const viewerIsFamily = viewerId === row.match.familyId;
+      const contactShared = viewerIsFamily || row.invited;
+      return {
+        id: row.match.id,
+        projectId: row.project.id,
+        projectTitle: row.project.title,
+        budgetMinCents: row.project.budgetMinCents,
+        budgetMaxCents: row.project.budgetMaxCents,
+        specialistId: row.match.specialistId,
+        specialistName: row.specialist.displayName,
+        familyId: row.match.familyId,
+        familyName: row.family.displayName,
+        contactShared,
+        counterpartPhone: viewerIsFamily
+          ? row.specialist.phone
+          : contactShared
+            ? row.family.phone
+            : null,
+        address: contactShared ? row.family.address : null,
+        reference: contactShared ? row.family.reference : null,
+        district: row.family.district,
+        createdAt: row.match.createdAt.toISOString(),
+      };
+    });
+  }
+
+  private async assertWithinReach(
+    tx: Transaction,
+    project: typeof projects.$inferSelect,
+    specialistId: string,
+  ): Promise<void> {
+    const [me] = await tx.select().from(profiles).where(eq(profiles.userId, specialistId));
+    if (!me) {
+      throw new ConflictException('Completa tu perfil para cotizar');
+    }
+    if (distanceKm(me, project) <= me.radiusKm) {
+      return;
+    }
+    const [invitation] = await tx
+      .select({ one: sql`1` })
+      .from(swipes)
+      .where(familyInvited(project.id, specialistId));
+    if (!invitation) {
+      throw new ForbiddenException('Esta obra está fuera de tu zona de trabajo');
+    }
   }
 
   private async lockOpenProject(
-    tx: Parameters<Parameters<Database['transaction']>[0]>[0],
+    tx: Transaction,
     projectId: string,
   ): Promise<typeof projects.$inferSelect> {
     const [project] = await tx
@@ -257,7 +332,7 @@ export class MatchingService {
   }
 
   private async recordSwipe(
-    tx: Parameters<Parameters<Database['transaction']>[0]>[0],
+    tx: Transaction,
     project: typeof projects.$inferSelect,
     specialistId: string,
     actor: 'family' | 'specialist',
@@ -273,30 +348,17 @@ export class MatchingService {
     if (decision === 'pass') {
       return { matched: false, matchId: null };
     }
-    const counterpart = actor === 'family' ? 'specialist' : 'family';
-    const [reciprocal] = await tx
-      .select({ decision: swipes.decision })
-      .from(swipes)
-      .where(
-        and(
-          eq(swipes.projectId, project.id),
-          eq(swipes.specialistId, specialistId),
-          eq(swipes.actor, counterpart),
-          eq(swipes.decision, 'like'),
-        ),
-      );
-    if (!reciprocal) {
-      return { matched: false, matchId: null };
+    if (actor === 'specialist') {
+      await tx
+        .insert(matches)
+        .values({ projectId: project.id, specialistId, familyId: project.familyId })
+        .onConflictDoNothing();
     }
-    await tx
-      .insert(matches)
-      .values({ projectId: project.id, specialistId, familyId: project.familyId })
-      .onConflictDoNothing();
     const [match] = await tx
       .select({ id: matches.id })
       .from(matches)
       .where(and(eq(matches.projectId, project.id), eq(matches.specialistId, specialistId)));
-    return { matched: true, matchId: match?.id ?? null };
+    return { matched: Boolean(match), matchId: match?.id ?? null };
   }
 
   private async buildCards(
@@ -321,6 +383,26 @@ export class MatchingService {
     return rows.map(({ profile, details, distance }) => {
       const reputation = reputations.get(details.userId);
       const rating = reputation?.rating ?? null;
+      const items = portfolio.filter((item) => item.specialistId === details.userId);
+      const signals = {
+        specialties: details.specialties,
+        rating,
+        reviewCount: reputation?.reviewCount ?? 0,
+        completedJobs: details.completedJobs,
+        yearsExperience: details.yearsExperience,
+        verified: details.verified,
+        credential: details.credential,
+        portfolioCount: items.length,
+        pro: isProActive(details),
+      };
+      const ranking =
+        project && distance !== null
+          ? rankSpecialist(signals, {
+              projectKind: project.kind,
+              distanceKm: distance,
+              radiusKm: project.radiusKm,
+            })
+          : null;
       return {
         id: details.userId,
         displayName: profile.displayName,
@@ -333,25 +415,18 @@ export class MatchingService {
         visitFeeCents: details.visitFeeCents,
         availability: details.availability,
         avatarUrl: details.avatarUrl,
+        credential: details.credential,
+        yearsExperience: details.yearsExperience,
         verified: details.verified,
         pro: isProActive(details),
         demo: details.demo,
-        affinity:
-          project && distance !== null
-            ? calculateAffinity({
-                projectKind: project.kind,
-                specialties: details.specialties,
-                distanceKm: distance,
-                radiusKm: project.radiusKm,
-                rating,
-              })
-            : null,
+        level: specialistLevel(signals),
+        affinity: ranking?.score ?? null,
+        reasons: ranking?.reasons ?? [],
         rating,
-        reviewCount: reputation?.reviewCount ?? 0,
+        reviewCount: signals.reviewCount,
         completedJobs: details.completedJobs,
-        portfolio: portfolio
-          .filter((item) => item.specialistId === details.userId)
-          .map((item) => ({ id: item.id, url: item.url, caption: item.caption })),
+        portfolio: items.map((item) => ({ id: item.id, url: item.url, caption: item.caption })),
       };
     });
   }
